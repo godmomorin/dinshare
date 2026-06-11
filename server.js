@@ -21,7 +21,7 @@ const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // ---------- データベース ----------
-const db = new DatabaseSync(path.join(DATA_DTR, 'dinshare.db'));
+const db = new DatabaseSync(path.join(DATA_DIR, 'dinshare.db'));
 db.exec('PRAGMA journal_mode = WAL');
 
 db.exec(`
