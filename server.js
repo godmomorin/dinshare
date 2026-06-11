@@ -16,11 +16,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ---------- アップロード先フォルダ ----------
-const UPLOAD_DIR = path.join(__dirname, 'uploads');
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // ---------- データベース ----------
-const db = new DatabaseSync(path.join(__dirname, 'dinshare.db'));
+const db = new DatabaseSync(path.join(DATA_DTR, 'dinshare.db'));
 db.exec('PRAGMA journal_mode = WAL');
 
 db.exec(`
