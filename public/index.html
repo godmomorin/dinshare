@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DinShare</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0d;--surface:#181818;--s2:#222;--s3:#2a2a2a;
+  --acc:#ff4444;--acc2:#ff7070;
+  --like:#ff6b35;--kinda:#a78bfa;
+  --text:#f0f0f0;--muted:#888;--border:#2e2e2e;--r:12px;
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:80px}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:100;background:rgba(13,13,13,0.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 12px;height:52px;display:flex;align-items:center;gap:8px}
+.logo{font-size:1.2rem;font-weight:900;color:var(--acc);letter-spacing:-1px;flex-shrink:0}
+.logo em{color:var(--text);font-style:normal}
+.srch{flex:1;display:flex;background:var(--s2);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+.srch input{flex:1;background:none;border:none;outline:none;color:var(--text);padding:7px 13px;font-size:0.86rem;min-width:0}
+.srch input::placeholder{color:var(--muted)}
+.srch button{background:none;border:none;padding:0 12px;cursor:pointer;color:var(--muted)}
+.btn-hdr{background:var(--acc);color:#fff;border:none;border-radius:20px;padding:6px 13px;font-size:0.78rem;font-weight:700;cursor:pointer;flex-shrink:0;transition:background .15s}
+.btn-hdr:hover{background:var(--acc2)}
+.btn-hdr.ghost{background:var(--s2);border:1px solid var(--border);color:var(--text)}
+.user-chip{font-size:0.78rem;color:var(--muted);flex-shrink:0;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{background:none;border:none;color:var(--muted);padding:11px 14px;font-size:0.82rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s;flex-shrink:0}
+.tab.active{color:var(--text);border-bottom-color:var(--acc)}
+
+/* FEED */
+.feed{max-width:640px;margin:0 auto;padding:14px 10px;display:flex;flex-direction:column;gap:12px}
+
+/* POST CARD */
+.post-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.post-header{display:flex;align-items:center;gap:10px;padding:11px 13px 7px}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:0.95rem;font-weight:700;color:var(--acc);flex-shrink:0}
+.post-user{font-weight:700;font-size:0.86rem}
+.post-date{font-size:0.72rem;color:var(--muted);margin-top:1px}
+.post-type-badge{margin-left:auto;font-size:0.65rem;padding:2px 7px;border-radius:9px;font-weight:600;flex-shrink:0}
+.bt{background:#1e3a2e;color:#4ade80}.bp{background:#1a2a3e;color:#60a5fa}
+.bv{background:#3a1a1a;color:#f87171}.bvo{background:#1a1a3e;color:#a78bfa}
+.bm{background:#1a2e1a;color:#86efac}
+.btn-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:3px;margin-left:5px;flex-shrink:0}
+.btn-del:hover{color:var(--acc)}
+
+.post-title{padding:0 13px 4px;font-size:0.95rem;font-weight:700}
+.post-text{padding:0 13px 9px;font-size:0.9rem;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.post-media{width:100%;display:block;cursor:pointer}
+.post-media.photo{max-height:480px;object-fit:contain;background:#111}
+video.post-media{max-height:340px;background:#000}
+
+/* AUDIO */
+.audio-card{margin:0 13px 10px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:12px}
+.audio-title{font-size:0.88rem;font-weight:700;margin-bottom:6px}
+.audio-card audio{width:100%;margin-top:4px}
+audio{accent-color:var(--acc)}
+
+/* REACTIONS */
+.post-actions{display:flex;align-items:center;gap:6px;padding:9px 13px;border-top:1px solid var(--border);flex-wrap:wrap}
+.react-btn{display:flex;align-items:center;gap:4px;background:var(--s2);border:1px solid var(--border);color:var(--text);border-radius:20px;padding:5px 11px;font-size:0.8rem;font-weight:600;cursor:pointer;transition:transform .1s;user-select:none}
+.react-btn:active{transform:scale(0.9)}
+.react-btn.liked{background:#ff4a2015;border-color:var(--like);color:var(--like)}
+.react-btn.kinda{background:#a78bfa15;border-color:var(--kinda);color:var(--kinda)}
+.btn-playlist{display:flex;align-items:center;gap:4px;background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:5px 11px;font-size:0.78rem;font-weight:600;cursor:pointer}
+.btn-playlist:hover{color:var(--text)}
+.post-views{margin-left:auto;font-size:0.72rem;color:var(--muted)}
+
+/* RELATED */
+.related-section{padding:10px 13px 12px;border-top:1px solid var(--border)}
+.related-label{font-size:0.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.related-list{display:flex;flex-direction:column;gap:7px}
+.related-item{display:flex;align-items:center;gap:9px;cursor:pointer;padding:6px 8px;border-radius:8px;background:var(--s2)}
+.related-item:hover{background:var(--s3)}
+.ri-thumb{width:60px;height:40px;border-radius:5px;background:var(--s3);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.ri-thumb video{width:100%;height:100%;object-fit:cover}
+.ri-info{flex:1;min-width:0}
+.ri-title{font-size:0.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ri-user{font-size:0.7rem;color:var(--muted);margin-top:2px}
+
+/* COMMENTS */
+.comments-section{border-top:1px solid var(--border);padding:10px 13px 12px}
+.comments-toggle{background:none;border:none;color:var(--muted);font-size:0.78rem;font-weight:600;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px;margin-bottom:8px}
+.comments-toggle:hover{color:var(--text)}
+.comments-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.comment-item{display:flex;gap:8px;align-items:flex-start}
+.comment-avatar{width:26px;height:26px;border-radius:50%;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:var(--acc);flex-shrink:0}
+.comment-body{flex:1;background:var(--s2);border-radius:10px;padding:7px 10px}
+.comment-user{font-size:0.74rem;font-weight:700;margin-bottom:2px}
+.comment-text{font-size:0.84rem;line-height:1.5;word-break:break-word}
+.comment-date{font-size:0.68rem;color:var(--muted);margin-top:3px}
+.comment-form{display:flex;gap:7px;align-items:flex-start}
+.comment-input-wrap{flex:1}
+.comment-input{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:8px 11px;font-size:0.84rem;font-family:inherit;outline:none;resize:none;min-height:38px;transition:border-color .2s;line-height:1.4}
+.comment-input:focus{border-color:var(--acc)}
+.comment-hint{font-size:0.68rem;margin-top:3px}
+.comment-hint.ok{color:#4ade80}
+.comment-hint.ng{color:var(--muted)}
+.comment-hint.warn{color:#f87171}
+.comment-send{background:var(--acc);border:none;color:#fff;border-radius:8px;padding:8px 13px;font-size:0.82rem;font-weight:700;cursor:pointer;flex-shrink:0}
+.comment-send:disabled{background:#333;color:var(--muted);cursor:not-allowed}
+.comment-login-note{font-size:0.78rem;color:var(--muted);padding:6px 0}
+.comment-login-note a{color:var(--acc);cursor:pointer;text-decoration:underline}
+
+/* EMPTY */
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty .big{font-size:2.5rem;margin-bottom:10px}
+
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:200;align-items:flex-end;justify-content:center}
+.overlay.active{display:flex}
+@media(min-width:600px){.overlay{align-items:center}}
+.modal{background:var(--surface);width:100%;max-width:520px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:20px}
+@media(min-width:600px){.modal{border-radius:18px}}
+.modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 14px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.modal-title{font-size:1rem;font-weight:800}
+.modal-x{background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;padding:4px}
+.modal-x:hover{color:var(--text)}
+
+/* AUTH */
+.auth-tabs{display:flex;gap:8px;margin-bottom:16px}
+.atab{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:9px;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all .15s}
+.atab.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.auth-error{color:#f87171;font-size:0.8rem;margin-bottom:10px;min-height:18px}
+.auth-note{font-size:0.74rem;color:var(--muted);margin-top:10px;line-height:1.5}
+
+/* COMPOSE */
+.ctabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.ctab{flex:1;min-width:60px;background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:7px 4px;font-size:0.76rem;font-weight:600;cursor:pointer;transition:all .15s}
+.ctab.active{background:var(--acc);border-color:var(--acc);color:#fff}
+.finput{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:0.88rem;font-family:inherit;outline:none;transition:border-color .2s;margin-bottom:10px}
+.finput:focus{border-color:var(--acc)}
+textarea.finput{resize:vertical;min-height:80px}
+.char-c{text-align:right;font-size:0.72rem;color:var(--muted);margin-top:-7px;margin-bottom:9px}
+.mdrop{border:2px dashed var(--border);border-radius:10px;padding:24px 14px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:11px}
+.mdrop:hover,.mdrop.over{border-color:var(--acc);background:rgba(255,68,68,0.04)}
+.mdrop p{color:var(--muted);font-size:0.82rem;margin-top:5px}
+.mdrop strong{color:var(--acc)}
+.pbox{display:none;border-radius:10px;overflow:hidden;margin-bottom:11px;background:#000}
+.pbox img,.pbox video{width:100%;max-height:180px;object-fit:contain;display:block}
+.pbox audio{width:100%;padding:10px;display:block}
+.btn-sub{width:100%;background:var(--acc);color:#fff;border:none;border-radius:10px;padding:11px;font-size:0.92rem;font-weight:800;cursor:pointer;transition:background .15s}
+.btn-sub:hover{background:var(--acc2)}
+.btn-sub:disabled{background:#333;color:var(--muted);cursor:not-allowed}
+.upload-progress{display:none;font-size:0.8rem;color:var(--muted);text-align:center;margin-top:8px}
+
+/* PLAYLIST */
+.pl-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.pl-item{display:flex;align-items:center;justify-content:space-between;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:10px 13px}
+.pl-name{font-weight:700;font-size:0.88rem}
+.pl-count{font-size:0.75rem;color:var(--muted);margin-top:2px}
+.pl-play-btn{background:var(--acc);border:none;color:#fff;border-radius:20px;padding:4px 12px;font-size:0.76rem;font-weight:700;cursor:pointer}
+.pl-new{display:flex;gap:8px;margin-top:6px}
+.pl-new input{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:8px 11px;font-size:0.86rem;outline:none}
+.pl-new button{background:var(--acc);border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:0.82rem;font-weight:700;cursor:pointer}
+.plp-list{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.plp-item{background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;cursor:pointer;font-size:0.88rem;font-weight:600}
+.plp-item:hover{background:var(--s3)}
+
+/* PLAYER BAR */
+#playerBar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:500;background:rgba(20,20,20,0.98);border-top:1px solid var(--border);padding:8px 14px;align-items:center;gap:10px}
+#playerBar.active{display:flex}
+.pb-info{flex:1;min-width:0}
+.pb-title{font-size:0.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pb-sub{font-size:0.7rem;color:var(--muted)}
+.pb-btns{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.pb-btn{background:none;border:none;color:var(--text);font-size:1.1rem;cursor:pointer;padding:4px}
+.pb-btn:hover{color:var(--acc)}
+#pbAudio{display:none}
+
+/* LIGHTBOX */
+.lbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:400;flex-direction:column;align-items:center;justify-content:center;padding:12px}
+.lbox.active{display:flex}
+.lbox img{max-width:95vw;max-height:80vh;object-fit:contain;border-radius:8px}
+.lbox-related{margin-top:14px;width:100%;max-width:600px;max-height:25vh;overflow-y:auto}
+.lbox-close{position:absolute;top:14px;right:14px;background:rgba(0,0,0,0.6);border:none;color:#fff;font-size:1.3rem;cursor:pointer;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center}
+
+/* TOAST */
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(60px);background:#222;color:#fff;padding:9px 18px;border-radius:22px;font-size:0.83rem;z-index:600;transition:transform .25s;border:1px solid var(--border);pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+@media(max-width:480px){
+  .tab{padding:10px 11px;font-size:0.77rem}
+  .ctab{font-size:0.72rem;padding:6px 2px}
+  .user-chip{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Din<em>Share</em></div>
+  <div class="srch">
+    <input type="text" id="searchQ" placeholder="検索...">
+    <button onclick="loadPosts()">🔍</button>
+  </div>
+  <span class="user-chip" id="userChip"></span>
+  <button class="btn-hdr ghost" id="authBtn" onclick="openAuth()">ログイン</button>
+  <button class="btn-hdr" onclick="openPost()">＋ 投稿</button>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="setTab('all',this)">すべて</button>
+  <button class="tab" onclick="setTab('text',this)">📝 テキスト</button>
+  <button class="tab" onclick="setTab('photo',this)">🖼 写真</button>
+  <button class="tab" onclick="setTab('video',this)">🎬 動画</button>
+  <button class="tab" onclick="setTab('voice',this)">🎙 Voice</button>
+  <button class="tab" onclick="setTab('music',this)">🎵 Music</button>
+  <button class="tab" onclick="openPlPanel()">📋 プレイリスト</button>
+</div>
+
+<div class="feed" id="feed"></div>
+
+<!-- AUTH MODAL -->
+<div class="overlay" id="authOverlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-title" id="authTitle">ログイン</div>
+      <button class="modal-x" onclick="closeAuth()">✕</button>
+    </div>
+    <div class="auth-tabs">
+      <button class="atab active" id="atabLogin" onclick="setAuthMode('login')">ログイン</button>
+      <button class="atab" id="atabRegister" onclick="setAuthMode('register')">新規登録</button>
+    </div>
+    <div class="auth-error" id="authError"></div>
+    <input class="finput" id="authUser" type="text" placeholder="ユーザーネーム" maxlength="20" autocomplete="username">
+    <input class="finput" id="authPass" type="password" placeholder="パスワード（6文字以上）" autocomplete="current-password">
+    <button class="btn-sub" onclick="doAuth()" id="authSubmit">ログイン</button>
+    <div class="auth-note">📌 メールアドレスは不要です。ユーザーネームとパスワードだけで登録できます。<br>⚠️ パスワードを忘れると復旧できないため、忘れないようにしてください。</div>
+  </div>
+</div>
+
+<!-- POST MODAL -->
+<div class="overlay" id="postOverlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-title">新しい投稿</div>
+      <button class="modal-x" onclick="closePost()">✕</button>
+    </div>
+    <div class="ctabs">
+      <button class="ctab active" onclick="setCompose('text',this)">📝 テキスト</button>
+      <button class="ctab" onclick="setCompose('photo',this)">🖼 写真</button>
+      <button class="ctab" onclick="setCompose('video',this)">🎬 動画</button>
+      <button class="ctab" onclick="setCompose('voice',this)">🎙 Voice</button>
+      <button class="ctab" onclick="setCompose('music',this)">🎵 Music</button>
+    </div>
+    <input class="finput" id="titleIn" type="text" placeholder="タイトル" maxlength="80" style="display:none">
+    <textarea class="finput" id="textIn" placeholder="いまなにしてる？" maxlength="500"></textarea>
+    <div class="char-c"><span id="charN">0</span>/500</div>
+    <div class="mdrop" id="mediaDrop" style="display:none" onclick="document.getElementById('mfile').click()">
+      <div style="font-size:2rem" id="dropIcon">📎</div>
+      <p><strong>タップして選択</strong><br>またはドロップ</p>
+      <p style="font-size:0.74rem;margin-top:4px" id="dropHint"></p>
+    </div>
+    <input type="file" id="mfile" accept="" style="display:none">
+    <div class="pbox" id="previewBox">
+      <img id="previewImg" src="" style="display:none">
+      <video id="previewVid" controls style="display:none"></video>
+      <audio id="previewAud" controls style="display:none"></audio>
+    </div>
+    <button class="btn-sub" id="submitBtn" onclick="submitPost()" disabled>投稿する</button>
+    <div class="upload-progress" id="uploadProg">アップロード中…</div>
+  </div>
+</div>
+
+<!-- PLAYLIST PANEL -->
+<div class="overlay" id="plPanel">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-title">📋 プレイリスト</div>
+      <button class="modal-x" onclick="closePlPanel()">✕</button>
+    </div>
+    <div class="pl-list" id="plList"></div>
+    <div class="pl-new">
+      <input type="text" id="plNameIn" placeholder="新しいプレイリスト名">
+      <button onclick="createPlaylist()">作成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD TO PLAYLIST PICKER -->
+<div class="overlay" id="plPicker">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-handle"></div>
+    <div class="modal-head">
+      <div class="modal-title">プレイリストに追加</div>
+      <button class="modal-x" onclick="closePlPicker()">✕</button>
+    </div>
+    <div class="plp-list" id="plpList"></div>
+  </div>
+</div>
+
+<!-- LIGHTBOX (photo) -->
+<div class="lbox" id="lightbox" onclick="if(event.target===this)closeLB()">
+  <button class="lbox-close" onclick="closeLB()">✕</button>
+  <img id="lbImg" src="">
+</div>
+
+<!-- VIDEO PLAYER -->
+<div class="lbox" id="videoBox" onclick="if(event.target===this)closeVB()">
+  <button class="lbox-close" onclick="closeVB()">✕</button>
+  <video id="lbVid" controls style="max-width:95vw;max-height:62vh;border-radius:8px"></video>
+  <div class="lbox-related" id="vidRelated"></div>
+</div>
+
+<!-- PLAYER BAR (audio) -->
+<div id="playerBar">
+  <audio id="pbAudio"></audio>
+  <div class="pb-info">
+    <div class="pb-title" id="pbTitle">—</div>
+    <div class="pb-sub" id="pbSub"></div>
+  </div>
+  <div class="pb-btns">
+    <button class="pb-btn" onclick="pbPrev()">⏮</button>
+    <button class="pb-btn" id="pbPlayBtn" onclick="pbToggle()">▶️</button>
+    <button class="pb-btn" onclick="pbNext()">⏭</button>
+    <button class="pb-btn" onclick="closePlayer()">✕</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let me = { loggedIn: false, username: null };
+let allPosts = [];
+let currentTab = 'all';
+let currentCompose = 'text';
+let mediaFile = null;
+let authMode = 'login';
+let pickerTargetId = null;
+let playerQueue = [];
+let playerIdx = 0;
+let openComments = new Set(); // 開いているコメント欄のpostId
+
+// ============================================================
+// UTILS
+// ============================================================
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
+function badgeHtml(type){
+  const map={text:['bt','テキスト'],photo:['bp','写真'],video:['bv','動画'],voice:['bvo','Voice'],music:['bm','Music']};
+  const [cls,label]=map[type]||['bt',type];
+  return `<span class="post-type-badge ${cls}">${label}</span>`;
+}
+function countUniqueEmoji(text){
+  const matches=[...text.matchAll(/\p{Emoji_Presentation}|\p{Extended_Pictographic}/gu)];
+  return new Set(matches.map(m=>m[0])).size;
+}
+async function api(url, opts={}){
+  const res = await fetch(url, {headers:{'Content-Type':'application/json'},...opts});
+  const data = await res.json().catch(()=>({}));
+  if(!res.ok) throw new Error(data.error||'エラーが発生しました');
+  return data;
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+async function checkAuth(){
+  try{
+    const data = await api('/api/me');
+    me = {loggedIn:data.loggedIn, username:data.username||null};
+  }catch{me={loggedIn:false,username:null}}
+  updateAuthUI();
+}
+function updateAuthUI(){
+  const chip=document.getElementById('userChip');
+  const btn=document.getElementById('authBtn');
+  if(me.loggedIn){
+    chip.textContent=`👤 ${me.username}`;
+    btn.textContent='ログアウト';
+    btn.onclick=doLogout;
+  }else{
+    chip.textContent='';
+    btn.textContent='ログイン';
+    btn.onclick=openAuth;
+  }
+}
+function openAuth(){
+  document.getElementById('authError').textContent='';
+  document.getElementById('authOverlay').classList.add('active');
+}
+function closeAuth(){document.getElementById('authOverlay').classList.remove('active')}
+document.getElementById('authOverlay').addEventListener('click',function(e){if(e.target===this)closeAuth()});
+
+function setAuthMode(mode){
+  authMode=mode;
+  document.getElementById('atabLogin').classList.toggle('active',mode==='login');
+  document.getElementById('atabRegister').classList.toggle('active',mode==='register');
+  document.getElementById('authTitle').textContent=mode==='login'?'ログイン':'新規登録';
+  document.getElementById('authSubmit').textContent=mode==='login'?'ログイン':'登録する';
+  document.getElementById('authError').textContent='';
+}
+async function doAuth(){
+  const username=document.getElementById('authUser').value.trim();
+  const password=document.getElementById('authPass').value;
+  const errEl=document.getElementById('authError');
+  errEl.textContent='';
+  try{
+    const data=await api(`/api/${authMode==='login'?'login':'register'}`,{
+      method:'POST',body:JSON.stringify({username,password})
+    });
+    me={loggedIn:true,username:data.username};
+    updateAuthUI();
+    closeAuth();
+    showToast(authMode==='login'?`👋 おかえりなさい、${data.username}さん`:`🎉 ようこそ、${data.username}さん！`);
+    loadPosts();
+  }catch(e){errEl.textContent=e.message}
+}
+async function doLogout(){
+  await api('/api/logout',{method:'POST'});
+  me={loggedIn:false,username:null};
+  updateAuthUI();
+  showToast('ログアウトしました');
+  loadPosts();
+}
+
+// ============================================================
+// POSTS
+// ============================================================
+async function loadPosts(){
+  const q=document.getElementById('searchQ').value.trim();
+  const params=new URLSearchParams();
+  if(q)params.set('q',q);
+  if(currentTab!=='all')params.set('type',currentTab);
+  try{
+    allPosts=await api('/api/posts?'+params.toString());
+    renderFeed();
+  }catch(e){showToast('読み込みに失敗しました')}
+}
+
+function renderFeed(){
+  const feed=document.getElementById('feed');
+  if(!allPosts.length){
+    const icons={all:'🌐',text:'💬',photo:'🖼',video:'🎬',voice:'🎙',music:'🎵'};
+    feed.innerHTML=`<div class="empty"><div class="big">${icons[currentTab]||'📭'}</div><p>まだ投稿がありません</p></div>`;
+    return;
+  }
+  feed.innerHTML=allPosts.map(p=>cardHtml(p)).join('');
+  // 開いていたコメント欄を復元
+  openComments.forEach(id=>{
+    const body=document.getElementById(`cmtbody-${id}`);
+    if(body){body.style.display='block';loadComments(id)}
+  });
+}
+
+function cardHtml(p){
+  const initials=(p.username||'？')[0].toUpperCase();
+  let mediaHtml='';
+  if(p.type==='photo'&&p.file_path){
+    mediaHtml=`<img class="post-media photo" src="${p.file_path}" loading="lazy" onclick="openLB('${p.file_path}')">`;
+  }else if(p.type==='video'&&p.file_path){
+    mediaHtml=`<video class="post-media" src="${p.file_path}" preload="metadata" onclick="openVideo(${p.id})"></video>`;
+  }else if((p.type==='voice'||p.type==='music')&&p.file_path){
+    const icon=p.type==='voice'?'🎙':'🎵';
+    mediaHtml=`<div class="audio-card">
+      <div class="audio-title">${icon} ${esc(p.title||'無題')}</div>
+      <audio controls src="${p.file_path}" onended="autoNextAudio(${p.id},'${p.type}')"></audio>
+    </div>`;
+  }
+  let relatedHtml='';
+  if(['video','voice','music'].includes(p.type)){
+    const related=allPosts.filter(x=>x.id!==p.id&&x.type===p.type).slice(0,3);
+    if(related.length){
+      relatedHtml=`<div class="related-section"><div class="related-label">関連</div>
+        <div class="related-list">${related.map(r=>relatedItemHtml(r)).join('')}</div></div>`;
+    }
+  }
+  const plBtn=['voice','music','video'].includes(p.type)&&me.loggedIn?
+    `<button class="btn-playlist" onclick="openPlPicker(${p.id})">＋ PL</button>`:'';
+  const delBtn=p.isMine?`<button class="btn-del" onclick="deletePost(${p.id})" title="削除">🗑</button>`:'';
+
+  const isOpen=openComments.has(p.id);
+  const commentHtml=`
+    <div class="comments-section">
+      <button class="comments-toggle" onclick="toggleComments(${p.id})">
+        💬 コメント${p.comment_count>0?` (${p.comment_count})`:''} <span id="cmtarrow-${p.id}">${isOpen?'▲':'▼'}</span>
+      </button>
+      <div id="cmtbody-${p.id}" style="display:${isOpen?'block':'none'}">
+        <div class="comments-list" id="cmtlist-${p.id}"></div>
+        ${me.loggedIn?`
+        <div class="comment-form">
+          <div class="comment-input-wrap">
+            <textarea class="comment-input" id="cmtin-${p.id}" rows="1"
+              placeholder="コメントを入力…（絵文字3種類以上 🎉）"
+              oninput="onCommentInput(${p.id})"></textarea>
+            <div class="comment-hint ng" id="cmthint-${p.id}">絵文字を3種類以上使ってください</div>
+          </div>
+          <button class="comment-send" id="cmtbtn-${p.id}" onclick="submitComment(${p.id})" disabled>送信</button>
+        </div>`:`
+        <div class="comment-login-note"><a onclick="openAuth()">ログイン</a>するとコメントできます</div>`}
+      </div>
+    </div>`;
+
+  return `<div class="post-card">
+    <div class="post-header">
+      <div class="avatar">${initials}</div>
+      <div><div class="post-user">${esc(p.username)}</div><div class="post-date">${p.created_at}</div></div>
+      ${badgeHtml(p.type)}${delBtn}
+    </div>
+    ${p.title&&p.type==='video'?`<div class="post-title">${esc(p.title)}</div>`:''}
+    ${p.text?`<div class="post-text">${esc(p.text)}</div>`:''}
+    ${mediaHtml}
+    <div class="post-actions">
+      <button class="react-btn liked" onclick="react(${p.id},'like')">🔥 <span id="like-${p.id}">${p.likes}</span></button>
+      <button class="react-btn kinda" onclick="react(${p.id},'kinda')">👍 <span id="kinda-${p.id}">${p.kindas}</span></button>
+      ${plBtn}
+      <span class="post-views">👁 ${p.views}</span>
+    </div>
+    ${relatedHtml}
+    ${commentHtml}
+  </div>`;
+}
+
+function relatedItemHtml(p){
+  const icon=p.type==='video'?'🎬':p.type==='voice'?'🎙':'🎵';
+  const thumb=p.type==='video'&&p.file_path?`<video src="${p.file_path}" preload="metadata"></video>`:`<span>${icon}</span>`;
+  const action=p.type==='video'?`openVideo(${p.id})`:`playAudio(${p.id})`;
+  return `<div class="related-item" onclick="${action}">
+    <div class="ri-thumb">${thumb}</div>
+    <div class="ri-info">
+      <div class="ri-title">${esc(p.title||'無題')}</div>
+      <div class="ri-user">${esc(p.username)}</div>
+    </div>
+  </div>`;
+}
+
+async function deletePost(id){
+  if(!confirm('この投稿を削除しますか？'))return;
+  try{
+    await api(`/api/posts/${id}`,{method:'DELETE'});
+    showToast('🗑 削除しました');
+    loadPosts();
+  }catch(e){showToast(e.message)}
+}
+
+// ============================================================
+// TABS & SEARCH
+// ============================================================
+function setTab(t,el){
+  currentTab=t;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  loadPosts();
+}
+let searchTimer=null;
+document.getElementById('searchQ').addEventListener('input',()=>{
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(loadPosts,350);
+});
+
+// ============================================================
+// COMPOSE
+// ============================================================
+function openPost(){
+  if(!me.loggedIn){
+    showToast('投稿にはログインが必要です');
+    openAuth();
+    return;
+  }
+  document.getElementById('postOverlay').classList.add('active');
+}
+function closePost(){document.getElementById('postOverlay').classList.remove('active');resetForm()}
+document.getElementById('postOverlay').addEventListener('click',function(e){if(e.target===this)closePost()});
+
+function setCompose(type,el){
+  currentCompose=type;
+  document.querySelectorAll('.ctab').forEach(x=>x.classList.remove('active'));
+  el.classList.add('active');
+  const drop=document.getElementById('mediaDrop');
+  const mfile=document.getElementById('mfile');
+  const titleIn=document.getElementById('titleIn');
+  const textArea=document.getElementById('textIn');
+  mediaFile=null;
+  document.getElementById('previewBox').style.display='none';
+  ['previewImg','previewVid','previewAud'].forEach(id=>document.getElementById(id).style.display='none');
+
+  const configs={
+    text:{drop:false,title:false,ph:'いまなにしてる？'},
+    photo:{drop:true,title:false,icon:'🖼',hint:'JPG / PNG / GIF など',accept:'image/*',ph:'キャプション（任意）'},
+    video:{drop:true,title:true,icon:'🎬',hint:'MP4 / MOV など',accept:'video/*',ph:'説明（任意）'},
+    voice:{drop:true,title:true,icon:'🎙',hint:'M4A / MP3 / WAV / ボイスメモ など',accept:'audio/*,.m4a,.aac,.mp3,.wav,.ogg,.flac',ph:'説明（任意）'},
+    music:{drop:true,title:true,icon:'🎵',hint:'MP3 / AAC / FLAC / WAV など',accept:'audio/*,.mp3,.m4a,.aac,.flac,.wav,.ogg',ph:'説明（任意）'}
+  };
+  const c=configs[type];
+  drop.style.display=c.drop?'block':'none';
+  titleIn.style.display=c.title?'block':'none';
+  textArea.placeholder=c.ph;
+  if(c.drop){
+    document.getElementById('dropIcon').textContent=c.icon;
+    document.getElementById('dropHint').textContent=c.hint;
+    mfile.accept=c.accept;
+  }
+  checkReady();
+}
+
+document.getElementById('textIn').addEventListener('input',function(){
+  document.getElementById('charN').textContent=this.value.length;
+  checkReady();
+});
+document.getElementById('mfile').addEventListener('change',function(){
+  if(!this.files[0])return;
+  mediaFile=this.files[0];
+  showPreview(mediaFile);
+  checkReady();
+});
+const mdrop=document.getElementById('mediaDrop');
+mdrop.addEventListener('dragover',e=>{e.preventDefault();mdrop.classList.add('over')});
+mdrop.addEventListener('dragleave',()=>mdrop.classList.remove('over'));
+mdrop.addEventListener('drop',e=>{
+  e.preventDefault();mdrop.classList.remove('over');
+  const f=e.dataTransfer.files[0];if(!f)return;
+  mediaFile=f;showPreview(f);checkReady();
+});
+
+function showPreview(file){
+  const box=document.getElementById('previewBox');
+  const img=document.getElementById('previewImg');
+  const vid=document.getElementById('previewVid');
+  const aud=document.getElementById('previewAud');
+  const url=URL.createObjectURL(file);
+  box.style.display='block';
+  img.style.display='none';vid.style.display='none';aud.style.display='none';
+  if(file.type.startsWith('image/')){img.src=url;img.style.display='block'}
+  else if(file.type.startsWith('video/')){vid.src=url;vid.style.display='block'}
+  else{aud.src=url;aud.style.display='block'}
+}
+
+function checkReady(){
+  const text=document.getElementById('textIn').value.trim();
+  const ok=(currentCompose==='text'&&text)||(currentCompose!=='text'&&mediaFile);
+  document.getElementById('submitBtn').disabled=!ok;
+}
+
+async function submitPost(){
+  const btn=document.getElementById('submitBtn');
+  const prog=document.getElementById('uploadProg');
+  btn.disabled=true;
+  prog.style.display='block';
+  try{
+    const fd=new FormData();
+    fd.append('type',currentCompose);
+    fd.append('title',document.getElementById('titleIn').value.trim());
+    fd.append('text',document.getElementById('textIn').value.trim());
+    if(mediaFile)fd.append('file',mediaFile);
+    const res=await fetch('/api/posts',{method:'POST',body:fd});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'投稿に失敗しました');
+    closePost();
+    showToast('✅ 投稿しました！');
+    loadPosts();
+  }catch(e){showToast(e.message)}
+  finally{btn.disabled=false;prog.style.display='none'}
+}
+
+function resetForm(){
+  ['textIn','titleIn'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('charN').textContent='0';
+  document.getElementById('previewBox').style.display='none';
+  ['previewImg','previewVid','previewAud'].forEach(id=>{const el=document.getElementById(id);el.src='';el.style.display='none'});
+  document.getElementById('mfile').value='';
+  document.getElementById('mediaDrop').style.display='none';
+  document.getElementById('titleIn').style.display='none';
+  mediaFile=null;currentCompose='text';
+  document.querySelectorAll('.ctab').forEach((x,i)=>x.classList.toggle('active',i===0));
+  document.getElementById('submitBtn').disabled=true;
+}
+
+// ============================================================
+// REACTIONS
+// ============================================================
+async function react(id,kind){
+  try{
+    const data=await api(`/api/posts/${id}/react`,{method:'POST',body:JSON.stringify({kind})});
+    document.getElementById(`like-${id}`).textContent=data.likes;
+    document.getElementById(`kinda-${id}`).textContent=data.kindas;
+    const el=document.getElementById(`${kind}-${id}`).parentElement;
+    el.style.transform='scale(1.18)';setTimeout(()=>el.style.transform='',140);
+  }catch(e){showToast(e.message)}
+}
+
+// ============================================================
+// COMMENTS
+// ============================================================
+async function toggleComments(postId){
+  const body=document.getElementById(`cmtbody-${postId}`);
+  const arrow=document.getElementById(`cmtarrow-${postId}`);
+  const isOpen=body.style.display!=='none';
+  if(isOpen){
+    body.style.display='none';arrow.textContent='▼';
+    openComments.delete(postId);
+  }else{
+    body.style.display='block';arrow.textContent='▲';
+    openComments.add(postId);
+    loadComments(postId);
+  }
+}
+
+async function loadComments(postId){
+  try{
+    const comments=await api(`/api/posts/${postId}/comments`);
+    const el=document.getElementById(`cmtlist-${postId}`);
+    if(!el)return;
+    el.innerHTML=comments.map(c=>`
+      <div class="comment-item">
+        <div class="comment-avatar">${(c.username||'？')[0].toUpperCase()}</div>
+        <div class="comment-body">
+          <div class="comment-user">${esc(c.username)}</div>
+          <div class="comment-text">${esc(c.text)}</div>
+          <div class="comment-date">${c.created_at}</div>
+        </div>
+      </div>`).join('')||'<div style="color:var(--muted);font-size:0.8rem">まだコメントがありません</div>';
+  }catch(e){}
+}
+
+function onCommentInput(postId){
+  const inp=document.getElementById(`cmtin-${postId}`);
+  const hint=document.getElementById(`cmthint-${postId}`);
+  const btn=document.getElementById(`cmtbtn-${postId}`);
+  const text=inp.value.trim();
+  const count=countUniqueEmoji(text);
+  if(!text){
+    hint.className='comment-hint ng';
+    hint.textContent='絵文字を3種類以上使ってください';
+    btn.disabled=true;
+  }else if(count<3){
+    hint.className='comment-hint warn';
+    hint.textContent=`絵文字があと ${3-count} 種類必要です（現在 ${count} 種類）`;
+    btn.disabled=true;
+  }else{
+    hint.className='comment-hint ok';
+    hint.textContent=`✅ 絵文字 ${count} 種類 — 送信できます！`;
+    btn.disabled=false;
+  }
+}
+
+async function submitComment(postId){
+  const inp=document.getElementById(`cmtin-${postId}`);
+  const text=inp.value.trim();
+  try{
+    await api(`/api/posts/${postId}/comments`,{method:'POST',body:JSON.stringify({text})});
+    inp.value='';
+    onCommentInput(postId);
+    loadComments(postId);
+    showToast('💬 コメントしました！');
+  }catch(e){showToast(e.message)}
+}
+
+// ============================================================
+// PHOTO LIGHTBOX
+// ============================================================
+function openLB(url){
+  document.getElementById('lbImg').src=url;
+  document.getElementById('lightbox').classList.add('active');
+}
+function closeLB(){document.getElementById('lightbox').classList.remove('active')}
+
+// ============================================================
+// VIDEO PLAYER（自動連続再生・関連動画つき）
+// ============================================================
+function openVideo(id){
+  const p=allPosts.find(x=>x.id===id);if(!p||!p.file_path)return;
+  fetch(`/api/posts/${id}/view`,{method:'POST'});
+  const vid=document.getElementById('lbVid');
+  vid.src=p.file_path;vid.play();
+  vid.onended=()=>autoNextVideo(id);
+  const related=allPosts.filter(x=>x.id!==id&&x.type==='video').slice(0,5);
+  const relDiv=document.getElementById('vidRelated');
+  relDiv.innerHTML=related.length?
+    `<div class="related-label" style="margin-bottom:8px">関連動画</div>
+     <div class="related-list">${related.map(r=>relatedItemHtml(r)).join('')}</div>`:'';
+  document.getElementById('videoBox').classList.add('active');
+}
+function closeVB(){
+  document.getElementById('videoBox').classList.remove('active');
+  const v=document.getElementById('lbVid');v.pause();v.src='';
+}
+function autoNextVideo(id){
+  const videos=allPosts.filter(x=>x.type==='video'&&x.file_path);
+  if(videos.length<2)return;
+  const idx=videos.findIndex(x=>x.id===id);
+  const next=videos[(idx+1)%videos.length];
+  if(next)openVideo(next.id);
+}
+
+// ============================================================
+// AUDIO PLAYER（自動連続再生）
+// ============================================================
+function buildQueue(type){
+  return allPosts.filter(p=>p.type===type&&p.file_path).map(p=>p.id);
+}
+function playAudio(id){
+  const p=allPosts.find(x=>x.id===id);if(!p||!p.file_path)return;
+  playerQueue=buildQueue(p.type);
+  playerIdx=playerQueue.indexOf(id);
+  if(playerIdx<0){playerQueue.push(id);playerIdx=playerQueue.length-1}
+  _playIdx(playerIdx);
+}
+function autoNextAudio(id,type){
+  playerQueue=buildQueue(type);
+  playerIdx=playerQueue.indexOf(id);
+  pbNext();
+}
+function _playIdx(idx){
+  const id=playerQueue[idx];
+  const p=allPosts.find(x=>x.id===id);if(!p)return;
+  fetch(`/api/posts/${id}/view`,{method:'POST'});
+  const aud=document.getElementById('pbAudio');
+  document.getElementById('pbTitle').textContent=p.title||'無題';
+  document.getElementById('pbSub').textContent=`${p.username} · ${p.type==='music'?'🎵 Music':'🎙 Voice'}`;
+  aud.src=p.file_path;aud.play();
+  document.getElementById('pbPlayBtn').textContent='⏸';
+  document.getElementById('playerBar').classList.add('active');
+  aud.onended=()=>pbNext();
+}
+function pbToggle(){
+  const aud=document.getElementById('pbAudio');
+  if(aud.paused){aud.play();document.getElementById('pbPlayBtn').textContent='⏸'}
+  else{aud.pause();document.getElementById('pbPlayBtn').textContent='▶️'}
+}
+function pbNext(){if(!playerQueue.length)return;playerIdx=(playerIdx+1)%playerQueue.length;_playIdx(playerIdx)}
+function pbPrev(){if(!playerQueue.length)return;playerIdx=(playerIdx-1+playerQueue.length)%playerQueue.length;_playIdx(playerIdx)}
+function closePlayer(){
+  document.getElementById('pbAudio').pause();
+  document.getElementById('playerBar').classList.remove('active');
+}
+
+// ============================================================
+// PLAYLISTS
+// ============================================================
+async function openPlPanel(){
+  if(!me.loggedIn){showToast('プレイリストにはログインが必要です');openAuth();return}
+  await renderPlList();
+  document.getElementById('plPanel').classList.add('active');
+}
+function closePlPanel(){document.getElementById('plPanel').classList.remove('active')}
+document.getElementById('plPanel').addEventListener('click',function(e){if(e.target===this)closePlPanel()});
+
+async function renderPlList(){
+  try{
+    const lists=await api('/api/playlists');
+    const el=document.getElementById('plList');
+    el.innerHTML=lists.length?lists.map(pl=>`
+      <div class="pl-item">
+        <div>
+          <div class="pl-name">${esc(pl.name)}</div>
+          <div class="pl-count">${pl.item_count} 件</div>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center">
+          <button class="pl-play-btn" onclick="playPlaylist(${pl.id})">▶ 再生</button>
+          <button style="background:none;border:none;color:var(--muted);cursor:pointer" onclick="deletePlaylist(${pl.id})">🗑</button>
+        </div>
+      </div>`).join(''):
+      '<div style="color:var(--muted);font-size:0.85rem;text-align:center;padding:20px">プレイリストがありません</div>';
+  }catch(e){showToast(e.message)}
+}
+
+async function createPlaylist(){
+  const n=document.getElementById('plNameIn').value.trim();
+  if(!n)return showToast('名前を入力してください');
+  try{
+    await api('/api/playlists',{method:'POST',body:JSON.stringify({name:n})});
+    document.getElementById('plNameIn').value='';
+    renderPlList();
+    showToast('📋 プレイリストを作成しました');
+  }catch(e){showToast(e.message)}
+}
+async function deletePlaylist(id){
+  if(!confirm('このプレイリストを削除しますか？'))return;
+  try{
+    await api(`/api/playlists/${id}`,{method:'DELETE'});
+    renderPlList();
+    showToast('削除しました');
+  }catch(e){showToast(e.message)}
+}
+async function playPlaylist(id){
+  try{
+    const items=await api(`/api/playlists/${id}/items`);
+    const playable=items.filter(p=>p.file_path);
+    if(!playable.length)return showToast('再生できるアイテムがありません');
+    // allPostsにないアイテムも参照できるよう統合
+    playable.forEach(p=>{if(!allPosts.find(x=>x.id===p.id))allPosts.push(p)});
+    playerQueue=playable.map(p=>p.id);
+    playerIdx=0;
+    _playIdx(0);
+    closePlPanel();
+    showToast('▶ プレイリストを再生中');
+  }catch(e){showToast(e.message)}
+}
+
+async function openPlPicker(postId){
+  pickerTargetId=postId;
+  try{
+    const lists=await api('/api/playlists');
+    const el=document.getElementById('plpList');
+    el.innerHTML=lists.length?
+      lists.map(pl=>`<div class="plp-item" onclick="addToPlaylist(${pl.id})">${esc(pl.name)} <span style="color:var(--muted);font-size:0.75rem">(${pl.item_count}件)</span></div>`).join(''):
+      '<div style="color:var(--muted);font-size:0.85rem;padding:10px">プレイリストがありません。先に作成してください。</div>';
+    document.getElementById('plPicker').classList.add('active');
+  }catch(e){showToast(e.message)}
+}
+function closePlPicker(){document.getElementById('plPicker').classList.remove('active');pickerTargetId=null}
+document.getElementById('plPicker').addEventListener('click',function(e){if(e.target===this)closePlPicker()});
+
+async function addToPlaylist(plId){
+  try{
+    await api(`/api/playlists/${plId}/items`,{method:'POST',body:JSON.stringify({postId:pickerTargetId})});
+    closePlPicker();
+    showToast('✅ 追加しました');
+  }catch(e){showToast(e.message);closePlPicker()}
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async()=>{
+  await checkAuth();
+  await loadPosts();
+})();
+</script>
+</body>
+</html>
