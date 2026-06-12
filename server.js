@@ -183,8 +183,9 @@ app.get('/api/posts', (req, res) => {
   if (conds.length) sql += ' WHERE ' + conds.join(' AND ');
   sql += ' ORDER BY p.id DESC LIMIT 100';
   const posts = db.prepare(sql).all(...params);
-  res.json(posts.map(p => ({ ...p, isMine: p.user_id === req.session.userId })));
-});
+ const isAdmin = req.session.username === process.env.ADMIN_USERNAME;
+  res.json(posts.map(p => ({ ...p, isMine: p.user_id === req.session.userId || isAdmin })));
+
 
 // 投稿作成（要ログイン）
 app.post('/api/posts', requireLogin, upload.single('file'), (req, res) => {
@@ -210,8 +211,10 @@ app.post('/api/posts', requireLogin, upload.single('file'), (req, res) => {
 app.delete('/api/posts/:id', requireLogin, (req, res) => {
   const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id);
   if (!post) return res.status(404).json({ error: '投稿が見つかりません' });
-  if (post.user_id !== req.session.userId) {
+  const isAdmin = req.session.username === process.env.ADMIN_USERNAME;
+  if (post.user_id !== req.session.userId && !isAdmin) {
     return res.status(403).json({ error: '自分の投稿のみ削除できます' });
+  }
   }
   // ファイルも削除
   if (post.file_path) {
