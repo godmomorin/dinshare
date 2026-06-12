@@ -517,12 +517,27 @@ function cardHtml(p){
       <button class="react-btn liked" onclick="react(${p.id},'like')">🔥 <span id="like-${p.id}">${p.likes}</span></button>
       <button class="react-btn kinda" onclick="react(${p.id},'kinda')">👍 <span id="kinda-${p.id}">${p.kindas}</span></button>
       ${plBtn}
+       <button class="react-btn" onclick="sharePost(${p.id})">📤</button>
       <span class="post-views">👁 ${p.views}</span>
     </div>
     ${relatedHtml}
     ${commentHtml}
   </div>`;
+   }
+  async function sharePost(postId){
+  const url = location.origin + '/post/' + postId;
+  if(navigator.share){
+    try{ await navigator.share({url}); return; }catch(e){}
+  }
+  try{
+    await navigator.clipboard.writeText(url);
+    showToast('リンクをコピーしました 📤');
+  }catch(e){
+    prompt('このURLをコピーしてください', url);
+  }
 }
+
+
 
 function relatedItemHtml(p){
   const icon=p.type==='video'?'🎬':p.type==='voice'?'🎙':'🎵';
