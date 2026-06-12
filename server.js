@@ -215,7 +215,6 @@ app.delete('/api/posts/:id', requireLogin, (req, res) => {
   if (post.user_id !== req.session.userId && !isAdmin) {
     return res.status(403).json({ error: '自分の投稿のみ削除できます' });
   }
-  }
   // ファイルも削除
   if (post.file_path) {
     const fp = path.join(__dirname, post.file_path);
