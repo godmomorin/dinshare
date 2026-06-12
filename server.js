@@ -342,6 +342,25 @@ app.get('/api/playlists/:id/items', requireLogin, (req, res) => {
   `).all(pl.id);
   res.json(items);
 });
+// ---------- 投稿の共有用ページ（OGP対応） ----------
+app.get('/post/:id', (req, res) => {
+  const post = db.prepare(`
+    SELECT p.*, u.username FROM posts p
+    JOIN users u ON p.user_id = u.id WHERE p.id = ?
+  `).get(req.params.id);
+  if (!post) return res.redirect('/');
+  const title = (post.title || post.text || 'DinShareの投稿').slice(0, 60);
+  const desc = (post.text || `${post.username}さんの投稿`).slice(0, 120);
+  res.send(`<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<title>${title} - DinShare</title>
+<meta property="og:title" content="${title}">
+<meta property="og:description" content="${desc}">
+<meta property="og:type" content="website">
+<script>location.href='/?post=' + ${post.id};</script>
+</head><body></body></html>`);
+});
 
 // ---------- 起動 ----------
 app.listen(PORT, () => {
