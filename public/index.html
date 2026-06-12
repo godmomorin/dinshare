@@ -713,18 +713,27 @@ async function loadComments(postId){
     const comments=await api(`/api/posts/${postId}/comments`);
     const el=document.getElementById(`cmtlist-${postId}`);
     if(!el)return;
-    el.innerHTML=comments.map(c=>`
+      el.innerHTML=comments.map(c=>`
       <div class="comment-item">
-        <div class="comment-avatar">${(c.username||'？')[0].toUpperCase()}</div>
+        <div class="comment-avatar">${(c.username||'?')[0].toUpperCase()}</div>
         <div class="comment-body">
           <div class="comment-user">${esc(c.username)}</div>
           <div class="comment-text">${esc(c.text)}</div>
-          <div class="comment-date">${c.created_at}</div>
+          <div class="comment-date">${c.created_at}
+            ${c.canDelete?` <button onclick="deleteComment(${c.id},${postId})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem">🗑</button>`:''}
+          </div>
         </div>
       </div>`).join('')||'<div style="color:var(--muted);font-size:0.8rem">まだコメントがありません</div>';
-  }catch(e){}
+ }catch(e){}
 }
-
+async function deleteComment(commentId,postId){
+  if(!confirm('このコメントを削除しますか？'))return;
+  try{
+    await api(`/api/comments/${commentId}`,{method:'DELETE'});
+    loadComments(postId);
+    showToast('コメントを削除しました');
+  }catch(e){showToast(e.message||'削除に失敗しました')}
+}
 function onCommentInput(postId){
   const inp=document.getElementById(`cmtin-${postId}`);
   const hint=document.getElementById(`cmthint-${postId}`);
