@@ -4,7 +4,7 @@
 // リアクション・プレイリスト・ファイルアップロード対応
 // ============================================================
 const express = require('express');
-const { DatabaseSync } = require('node:sqlite'); // Node.js標準内蔵SQLite（v22以降）
+const { DatabaseSync } = require('node:sqlite'); // Node.js標準内蔵SQLite (v22以降)
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const session = require('express-session');
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS posts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
-  type TEXT NOT NULL,          -- text / photo / video / voice / music
+  type TEXT NOT NULL,            -- text / photo / video / voice / music
   title TEXT DEFAULT '',
   text TEXT DEFAULT '',
   file_path TEXT,
@@ -183,9 +183,9 @@ app.get('/api/posts', (req, res) => {
   if (conds.length) sql += ' WHERE ' + conds.join(' AND ');
   sql += ' ORDER BY p.id DESC LIMIT 100';
   const posts = db.prepare(sql).all(...params);
- const isAdmin = req.session.username === process.env.ADMIN_USERNAME;
+  const isAdmin = req.session.username === process.env.ADMIN_USERNAME;
   res.json(posts.map(p => ({ ...p, isMine: p.user_id === req.session.userId || isAdmin })));
-
+});
 
 // 投稿作成（要ログイン）
 app.post('/api/posts', requireLogin, upload.single('file'), (req, res) => {
@@ -207,7 +207,7 @@ app.post('/api/posts', requireLogin, upload.single('file'), (req, res) => {
   res.json({ ok: true, id: result.lastInsertRowid });
 });
 
-// 投稿削除（本人のみ）
+// 投稿削除（本人または管理者）
 app.delete('/api/posts/:id', requireLogin, (req, res) => {
   const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id);
   if (!post) return res.status(404).json({ error: '投稿が見つかりません' });
@@ -217,7 +217,7 @@ app.delete('/api/posts/:id', requireLogin, (req, res) => {
   }
   // ファイルも削除
   if (post.file_path) {
-    const fp = path.join(__dirname, post.file_path);
+    const fp = path.join(DATA_DIR, post.file_path);
     if (fs.existsSync(fp)) fs.unlinkSync(fp);
   }
   db.prepare('DELETE FROM comments WHERE post_id = ?').run(post.id);
@@ -252,7 +252,11 @@ app.get('/api/posts/:id/comments', (req, res) => {
     JOIN users u ON c.user_id = u.id
     WHERE c.post_id = ? ORDER BY c.id ASC
   `).all(req.params.id);
-  res.json(comments);
+  const isAdmin = req.session.username === process.env.ADMIN_USERNAME;
+  res.json(comments.map(c => ({
+    ...c,
+    canDelete: c.user_id === req.session.userId || isAdmin
+  })));
 });
 
 app.post('/api/posts/:id/comments', requireLogin, (req, res) => {
@@ -268,6 +272,18 @@ app.post('/api/posts/:id/comments', requireLogin, (req, res) => {
   if (!post) return res.status(404).json({ error: '投稿が見つかりません' });
   db.prepare('INSERT INTO comments (post_id, user_id, text) VALUES (?, ?, ?)')
     .run(req.params.id, req.session.userId, text.slice(0, 300));
+  res.json({ ok: true });
+});
+
+// コメント削除（本人または管理者）
+app.delete('/api/comments/:id', requireLogin, (req, res) => {
+  const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(req.params.id);
+  if (!comment) return res.status(404).json({ error: 'コメントが見つかりません' });
+  const isAdmin = req.session.username === process.env.ADMIN_USERNAME;
+  if (comment.user_id !== req.session.userId && !isAdmin) {
+    return res.status(403).json({ error: '自分のコメントのみ削除できます' });
+  }
+  db.prepare('DELETE FROM comments WHERE id = ?').run(comment.id);
   res.json({ ok: true });
 });
 
@@ -327,7 +343,7 @@ app.get('/api/playlists/:id/items', requireLogin, (req, res) => {
   res.json(items);
 });
 
-// ============================================================
+// ---------- 起動 ----------
 app.listen(PORT, () => {
   console.log(`🚀 DinShare サーバー起動: http://localhost:${PORT}`);
 });
